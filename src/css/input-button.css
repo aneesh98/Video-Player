@@ -1,0 +1,128 @@
+.feed-layout {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  margin-left: 20%;
+  /* padding: 0em 10em; */
+}
+
+.profile-detail-display {
+  display: flex;
+  flex-direction: row;
+  padding: 1.5rem;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.profile-picture {
+  border-radius: 50%;
+  height: 10rem;
+  width: 10rem;
+  cursor: pointer;
+}
+
+.tab-item-style {
+  font-style: Helvetica, Arial, sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  font-stretch: 100%;
+  letter-spacing: 1px;
+  margin-left: 4px;
+  /* margin-top: 5px; */
+}
+.padding {
+  padding-top: 5px;
+}
+.detail-box {
+  padding-left: 5em;
+}
+
+.tab-header-name {
+  margin-left: 4px;
+}
+
+.d-flex {
+  display: flex;
+}
+
+.flex-row {
+  flex-direction: row;
+}
+
+.flex-column {
+  flex-direction: column;
+}
+
+.profile-detail-display-row {
+  justify-content: flex-start;
+  align-items: center;
+}
+
+.button-variant-1 {
+  background-color: inherit;
+  border-color: black;
+  color: black;
+  font-weight: 700;
+  /* letter-spacing: 0.05em; */
+  padding: 5px 9px;
+  height: fit-content;
+  border-width: thin;
+  border-color: lightgray;
+}
+
+.button-variant-1:hover {
+  background-color: inherit;
+  color: black;
+}
+
+.detail-row {
+  margin-left: 30px;
+}
+
+.sub-detail {
+  font-size: 16px;
+}
+
+.fw-600 {
+  font-weight: 600;
+}
+.margin-1 {
+  margin-left: 1em;
+}
+
+.modal-custom {
+  margin-top: 10%;
+  border-radius: 25%;
+}
+.t-center {
+  text-align: center;
+}
+.modal-header-custom {
+  background-color: white;
+  color: black;
+}
+
+.modal-body-custom {
+  width: 80%;
+  height: 20%;
+  margin: 4% 10%;
+  /* border-top-color: black; */
+  border-width: thin;
+  font-weight: 600;
+  text-align: center;
+  cursor: pointer;
+  border-style: solid;
+  padding-top: 20px;
+  padding-bottom: 20px;
+  border-radius: 10px;
+  border-color: black;
+  /* border-bottom-style: solid; */
+  /* border: thin solid black; */
+}
+
+.upload-button {
+  color: rgb(0, 149, 246);
+}
+
+.cancel-button {
+  color: rgb(237, 73, 86);
+}

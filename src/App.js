@@ -21,10 +21,12 @@ class App extends Component {
     }))
   }
   componentDidMount() {
+    console.log('[AppComponent] Called CDM');
     ipc.on('selected-file', this.setVideoOptions);
   }
   componentWillUnmount() {
     ipc.removeAllListeners();
+    console.log('[UNMOUNT] App');
   }
   render() {
     const type = this.state.videoSrc.split('.').at(-1);
@@ -32,7 +34,7 @@ class App extends Component {
       autoplay: true,
         controls: true,
         sources: [{
-          src: 'http://localhost:3000/'+this.state.videoSrc.split('/').at(-1),
+          src: this.state.videoSrc,
           type: 'video/' + (type === 'mkv' ? 'webm' : type)
         }]
     }

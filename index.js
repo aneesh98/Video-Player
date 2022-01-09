@@ -7,36 +7,61 @@ const dialog = electron.dialog;
 const ipc = electron.ipcMain;
 const Menu = electron.Menu;
 const fs = require('fs');
+const srt2vtt = require('srt2vtt')
 // Module to create native browser window.
 const BrowserWindow = electron.BrowserWindow;
 
 const path = require('path');
 const url = require('url');
-const mode = 'DEV';
+const mode = 'PROD';
 const childProcess = require('child_process');
 const { ipcRenderer } = require('electron');
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
 let mainWindow;
 
-const template = [{
+const createLink = (source) => {
+    const dest = './public/'+source.split('/').at(-1)
+    childProcess.spawn('ln', [
+        '-s',
+        source,
+        dest
+    ])
+}
+
+const convertSrt2Vtt = (source) => {
+    let data = fs.readFileSync(source);
+    let fileName = source.split('/').at(-1);
+    let resultFileName = fileName.split('.').slice(0, -1).join('.') + '.vtt'
+    let dest = source.split('/').slice(0, -1).join('/') + '/' + resultFileName;
+    console.log(dest);
+    srt2vtt(data, function (err, data) {
+        if (err) throw new Error(err);
+        fs.writeFileSync(dest, data)
+        if (mode === 'DEV') {
+            createLink(dest)
+        }
+    });
+    return (mode === 'DEV') ? 'http://localhost:3000/' + resultFileName : dest;
+}
+
+let template = [{
     label: 'File',
-    submenu: [{
-        label: 'Open File',
-        click: (menuItem) => {
+    submenu: [
+        {
+            label: 'Open File',
+            click: (menuItem) => {
             if(os.platform() === 'linux' || os.platform() === 'win32'){
                 dialog.showOpenDialog({
                     properties: ['openFile']
                 }).then(result => {
-                    if (mode == 'DEV') {
-                         childProcess.spawn('ln', [
-                             '-s',
-                             result.filePaths[0],
-                             './public/'+result.filePaths[0].split('/').at(-1)
-                         ])
-                    }
+                    let dest = result.filePaths[0];
+                    if (mode === 'DEV') {
+                        createLink(result.filePaths[0]);
+                        dest = 'http://localhost:3000/' + dest.split('/').at(-1)
+                     }
                     if (!result.canceled) {
-                        mainWindow.webContents.send('selected-file', result.filePaths[0]);
+                        mainWindow.webContents.send('selected-file', dest);
                     }
                 });
             } else {
@@ -46,12 +71,40 @@ const template = [{
                     if (files) event.sender.send('selected-file', files[0]);
                 });
             }
+            }
+        },
+        {
+            label: "Open Subtitles",
+            click: (menuItem) => {
+                if(os.platform() === 'linux' || os.platform() === 'win32'){
+                    dialog.showOpenDialog({
+                        properties: ['openFile']
+                    }).then(result => {
+
+                        if (!result.canceled) {
+                            const dest = convertSrt2Vtt(result.filePaths[0]);
+                            console.log('Sending the following path on the channel ', dest);
+                            mainWindow.webContents.send('subtitle-listener', dest);
+                        }
+                    });
+                } else {
+                    dialog.showOpenDialog({
+                        properties: ['openFile', 'openDirectory']
+                    }, function (files) {
+                        if (files) event.sender.send('selected-file', files[0]);
+                    });
+                }
+            }
         }
-    }]
-}]
+    ]
+}] 
+template = (mode === 'DEV') ? template.push({
+    role: 'toggleDevTools'
+}): template;
 const menu = Menu.buildFromTemplate(template);
 Menu.setApplicationMenu(menu);
 function createWindow() {
+    console.log('Calling create window');
     // Create the browser window.
     mainWindow = new BrowserWindow({width: 800, height: 600,
                                     webPreferences: {
@@ -61,10 +114,10 @@ function createWindow() {
 
     // and load the index.html of the app.
     // mainWindow.loadURL('http://localhost:3000');
-    mainWindow.loadURL('http://localhost:3000')
-    // mainWindow.loadFile('./build/index.html')
+    // mainWindow.loadURL('http://localhost:3000')
+    mainWindow.loadFile('./build/index.html')
     // Open the DevTools.
-    mainWindow.webContents.openDevTools();
+    // mainWindow.webContents.openDevTools();
 
     // Emitted when the window is closed.
     mainWindow.on('closed', function () {

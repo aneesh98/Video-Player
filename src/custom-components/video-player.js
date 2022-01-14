@@ -1,6 +1,7 @@
 import React from 'react';
 import videojs from 'video.js'
 import 'video.js/dist/video-js.css'
+import VideoSkip from './videojs-components/video-skip';
 
 const ipc = window.require('electron').ipcRenderer;
 
@@ -17,6 +18,19 @@ export default class VideoPlayer extends React.Component {
     this.player = videojs(this.videoNode, this.props, function onPlayerReady() {
         console.log('onPlayerReady', this)
       })
+    const VideoSkip = videojs.getComponent('VideoSkip');
+    const SkipCompForward = new VideoSkip(this.player, {
+      icon: 'forward'
+    });
+    const SkipCompBackward = new VideoSkip(this.player, {
+      icon: 'backward'
+    });
+    SkipCompForward.on('click', () => this.skip('forward'));
+    SkipCompBackward.on('click', () => this.skip('backward'));
+
+    this.player.controlBar.addChild(SkipCompForward);
+    this.player.controlBar.addChild(SkipCompBackward);
+
     ipc.on('subtitle-listener', this.setSubtitles)
   }
   setSubtitles = (e, path) => {
@@ -24,6 +38,9 @@ export default class VideoPlayer extends React.Component {
     this.setState({
       subtitlesPath: path
     })
+  }
+  skip = (type) => {
+    this.player.currentTime(this.player.currentTime() + (type === 'forward' ? 1 : -1) * 10 );
   }
   componentDidUpdate(prevProps, prevState) {
     console.log(this.props);

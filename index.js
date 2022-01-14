@@ -13,7 +13,7 @@ const BrowserWindow = electron.BrowserWindow;
 
 const path = require('path');
 const url = require('url');
-const mode = 'PROD';
+const mode = 'DEV';
 const childProcess = require('child_process');
 const { ipcRenderer } = require('electron');
 // Keep a global reference of the window object, if you don't, the window will
@@ -98,9 +98,14 @@ let template = [{
         }
     ]
 }] 
-template = (mode === 'DEV') ? template.push({
-    role: 'toggleDevTools'
-}): template;
+if (mode === 'DEV') {
+    template.push({
+        role: 'toggleDevTools'
+    })
+}
+// template = (mode === 'DEV') ? template.push({
+//     role: 'toggleDevTools'
+// }): template;
 const menu = Menu.buildFromTemplate(template);
 Menu.setApplicationMenu(menu);
 function createWindow() {
@@ -114,8 +119,8 @@ function createWindow() {
 
     // and load the index.html of the app.
     // mainWindow.loadURL('http://localhost:3000');
-    // mainWindow.loadURL('http://localhost:3000')
-    mainWindow.loadFile('./build/index.html')
+    mainWindow.loadURL('http://localhost:3000')
+    // mainWindow.loadFile('./build/index.html')
     // Open the DevTools.
     // mainWindow.webContents.openDevTools();
 

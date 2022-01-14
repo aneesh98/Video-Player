@@ -36,7 +36,17 @@ class App extends Component {
         sources: [{
           src: this.state.videoSrc,
           type: 'video/' + (type === 'mkv' ? 'webm' : type)
-        }]
+        }],
+        children: ['mediaLoader',
+        'posterImage',
+        'textTrackDisplay',
+        'loadingSpinner',
+        'bigPlayButton',
+        'liveTracker',
+        'controlBar',
+        'errorDisplay',
+        'textTrackSettings',
+        'resizeManager']
     }
     return (
       <div className="App">

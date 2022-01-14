@@ -1,0 +1,9 @@
+.pos {
+  position: relative;
+  text-align: center;
+  align-items: flex-start;
+  cursor: pointer;
+  top: 4px;
+  height: 5px;
+  margin: 0px 2px;
+}

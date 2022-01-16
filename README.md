@@ -1,2 +1,2 @@
 # Video-Player
-A simple video player made using electron framework and ReactJS
+Check the [master branch](https://github.com/aneesh98/Video-Player/tree/master) for latest developments

@@ -3,7 +3,13 @@
   text-align: center;
   align-items: flex-start;
   cursor: pointer;
-  top: 4px;
+  top: 9px;
   height: 5px;
   margin: 0px 2px;
+}
+
+.pos:focus:before,
+.pos:hover:before,
+.pos:focus {
+  text-shadow: 0em 0em 1em white;
 }

@@ -3,7 +3,6 @@ import '../css/input-button.css';
 const electron = window.require('electron');
 const {shell} = window.require('electron');
 const remote = electron.remote;
-console.log(remote);
 const ipc = window.require('electron').ipcRenderer;
 
 export default function FormButton(props) {
@@ -12,7 +11,6 @@ export default function FormButton(props) {
 
     const changeHandler = (e) => {
         setFile(e.target.files[0]);
-        console.log(e.target.files[0].path);
     };
     const inputFileNode = useRef(null);
     const onFileClick = () => {

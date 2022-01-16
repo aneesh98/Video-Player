@@ -11,42 +11,49 @@ class App extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      videoSrc: 'http://localhost:3000/Crimson.Peak.2015.720p.BRRip.x264.AAC-ETRG.mp4'
+      videoSrc: null,
+      settings: {}
     }
   }
   setVideoOptions = (e, path) => {
-    console.log(path);
     this.setState((state) => ({
       videoSrc: path
     }))
   }
   componentDidMount() {
-    console.log('[AppComponent] Called CDM');
     ipc.on('selected-file', this.setVideoOptions);
+    ipc.on('settings-receiver', this.setSettings)
+  }
+  setSettings = (e, value) => {
+    this.setState({
+      settings: value
+    })
   }
   componentWillUnmount() {
     ipc.removeAllListeners();
-    console.log('[UNMOUNT] App');
   }
   render() {
-    const type = this.state.videoSrc.split('.').at(-1);
+    const type = (this.state.videoSrc) ? this.state.videoSrc.split('.').at(-1) : '';
+
+    const sourceList = (this.state.videoSrc) ? [{
+      src: this.state.videoSrc,
+        type: 'video/' + (type === 'mkv' ? 'webm' : type)
+    }] : [];
     const videoOptions = {
       autoplay: true,
-        controls: true,
-        sources: [{
-          src: this.state.videoSrc,
-          type: 'video/' + (type === 'mkv' ? 'webm' : type)
-        }],
-        children: ['mediaLoader',
-        'posterImage',
-        'textTrackDisplay',
-        'loadingSpinner',
-        'bigPlayButton',
-        'liveTracker',
-        'controlBar',
-        'errorDisplay',
-        'textTrackSettings',
-        'resizeManager']
+      controls: true,
+      sources: sourceList,
+      children: ['mediaLoader',
+      'posterImage',
+      'textTrackDisplay',
+      'loadingSpinner',
+      'bigPlayButton',
+      'liveTracker',
+      'controlBar',
+      'errorDisplay',
+      'textTrackSettings',
+      'resizeManager'],
+      // settingsObj: this.state.settings
     }
     return (
       <div className="App">

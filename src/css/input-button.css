@@ -48,8 +48,19 @@
   flex-direction: row;
 }
 
+.rg-10 {
+  row-gap: 10px;
+}
 .flex-column {
   flex-direction: column;
+}
+
+.space-evenly {
+  justify-content: space-around;
+}
+
+.align-center {
+  align-items: center;
 }
 
 .profile-detail-display-row {
@@ -125,4 +136,41 @@
 
 .cancel-button {
   color: rgb(237, 73, 86);
+}
+
+.square-button {
+  background-color: lightBlue;
+  height: 20px;
+  width: 20px;
+  cursor: pointer;
+  margin: 2px;
+  border: 1px outset blue;
+}
+
+.square-button:hover {
+  background-color: blue;
+  color: white;
+}
+
+.input-box {
+  width: 20px;
+  height: 18px;
+
+  border: none;
+  border-style: none;
+  margin: 2px;
+  /* padding: 1px; */
+}
+
+.settings-text {
+  margin: 2px 25px;
+  font-size: small;
+}
+
+.submit-button {
+  background-color: rgba(0, 0, 255, 0.6);
+  color: white;
+  border: none;
+  height: 2em;
+  cursor: pointer;
 }

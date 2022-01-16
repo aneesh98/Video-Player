@@ -8,14 +8,16 @@ const ipc = electron.ipcMain;
 const Menu = electron.Menu;
 const fs = require('fs');
 const srt2vtt = require('srt2vtt')
+const storage = require('electron-json-storage');
 // Module to create native browser window.
 const BrowserWindow = electron.BrowserWindow;
 
 const path = require('path');
 const url = require('url');
-const mode = 'DEV';
+const mode = 'PROD';
 const childProcess = require('child_process');
 const { ipcRenderer } = require('electron');
+const { settings } = require('cluster');
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
 let mainWindow;
@@ -29,12 +31,22 @@ const createLink = (source) => {
     ])
 }
 
+const getSettings = () => {
+    const settingsObject = storage.getSync('settings');
+    const settingsList = ['skipAmount'];
+    const defaults = {
+        skipAmount: 10
+    }
+    settingsList.forEach(item => {if(!settingsObject.hasOwnProperty(item)) { settingsObject[item] = defaults[item]}});
+
+    return settingsObject;
+}
+
 const convertSrt2Vtt = (source) => {
     let data = fs.readFileSync(source);
     let fileName = source.split('/').at(-1);
     let resultFileName = fileName.split('.').slice(0, -1).join('.') + '.vtt'
     let dest = source.split('/').slice(0, -1).join('/') + '/' + resultFileName;
-    console.log(dest);
     srt2vtt(data, function (err, data) {
         if (err) throw new Error(err);
         fs.writeFileSync(dest, data)
@@ -83,7 +95,6 @@ let template = [{
 
                         if (!result.canceled) {
                             const dest = convertSrt2Vtt(result.filePaths[0]);
-                            console.log('Sending the following path on the channel ', dest);
                             mainWindow.webContents.send('subtitle-listener', dest);
                         }
                     });
@@ -94,6 +105,12 @@ let template = [{
                         if (files) event.sender.send('selected-file', files[0]);
                     });
                 }
+            }
+        },
+        {
+            label: 'Settings',
+            click: (menuItem) => {
+                mainWindow.webContents.send('settings-toggle', {})
             }
         }
     ]
@@ -109,18 +126,18 @@ if (mode === 'DEV') {
 const menu = Menu.buildFromTemplate(template);
 Menu.setApplicationMenu(menu);
 function createWindow() {
-    console.log('Calling create window');
     // Create the browser window.
     mainWindow = new BrowserWindow({width: 800, height: 600,
                                     webPreferences: {
+                                        devTools: (mode==='DEV'),
                                         nodeIntegration: true,
                                         contextIsolation: false,
                                     }});
 
     // and load the index.html of the app.
     // mainWindow.loadURL('http://localhost:3000');
-    mainWindow.loadURL('http://localhost:3000')
-    // mainWindow.loadFile('./build/index.html')
+    // mainWindow.loadURL('http://localhost:3000').then(() => mainWindow.webContents.send('settings-receiver', getSettings()))
+    mainWindow.loadFile('./build/index.html').then(() => mainWindow.webContents.send('settings-receiver', getSettings()))
     // Open the DevTools.
     // mainWindow.webContents.openDevTools();
 
@@ -146,6 +163,10 @@ app.on('window-all-closed', function () {
         app.quit()
     }
 });
+
+ipc.on('settings-receiver-web', function(e, data) {
+    storage.set('settings', data);
+})
 
 app.on('activate', function () {
     // On OS X it's common to re-create a window in the app when the

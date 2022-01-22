@@ -12,10 +12,32 @@ export default class VideoPlayer extends React.Component {
     this.state = {
       subtitlesPath: '',
       showSettings: false,
+      playing: false,
+      sleeperId: null,
       settings: {
-        skipAmount: 8
+        skipAmount: 8,
+        autoSleepEnable: false,
+        autoSleepAmount: 30
       }
     }
+  }
+  registerShortcuts = () => {
+    const shortcutList = {
+      'F': () => this.skip('forward'),
+      'B': () => this.skip('backward'),
+      'P': () => this.togglePlay(),
+      'K': () => this.enterFullScreen()
+    };
+    window.addEventListener('keyup', (e) => {
+      Object.entries(shortcutList).forEach((shortcut) => {
+        if(e.key.toLowerCase() === shortcut[0].toLowerCase()) {
+          shortcut[1]();
+        }
+      })
+    })
+  }
+  enterFullScreen = () => {
+    document.getElementsByClassName('vjs-fullscreen-control')[0].click();
   }
   componentDidMount() {
     // instantiate Video.js
@@ -25,12 +47,13 @@ export default class VideoPlayer extends React.Component {
     const SkipCompForward = new VideoSkip(this.player, {
       icon: 'forward'
     });
+    this.enterFullScreen();
     const SkipCompBackward = new VideoSkip(this.player, {
       icon: 'backward'
     });
     SkipCompForward.on('click', () => this.skip('forward'));
     SkipCompBackward.on('click', () => this.skip('backward'));
-    
+    this.registerShortcuts();
     this.player.controlBar.addChild(SkipCompForward);
     this.player.controlBar.addChild(SkipCompBackward);
     ipc.on('subtitle-listener', this.setSubtitles)
@@ -61,6 +84,9 @@ export default class VideoPlayer extends React.Component {
         this.player.removeRemoteTextTrack();
         // this.player.reset();
         this.player.play();
+        this.setState({
+          playing: true
+        })
       }
       // this.player.load();
     }
@@ -68,12 +94,15 @@ export default class VideoPlayer extends React.Component {
       this.setState({
         settings: this.props.settingsObj
       })    
+      if (this.props.settingsObj.autoSleepEnable) {
+        this.startAutoSleep();
+      }
     }
     if(prevState.subtitlesPath !== this.state.subtitlesPath) {
       this.player.addRemoteTextTrack({src: this.state.subtitlesPath});
       // this.player.textTracks().tracks_.cues_[0].endTime = 50
       setTimeout(() => {
-        this.player.textTracks().tracks_[0].cues_[0].endTime = 50;
+        // this.player.textTracks().tracks_[0].cues_[0].endTime = 50;
       }, 3000)
       // this.player.addRemoteTextTrack({src: this.state.subtitlesPath})
     }
@@ -87,6 +116,17 @@ export default class VideoPlayer extends React.Component {
   //   }
   // }
   // destroy player on unmount
+  togglePlay = () => {
+    if (this.state.playing) {
+      this.player.pause();
+    } else {
+      this.player.play();
+    }
+    this.setState((state) => ({
+      playing: !state.playing
+    }))
+  }
+
   componentWillUnmount() {
     if (this.player) {
       this.player.dispose()
@@ -99,16 +139,51 @@ export default class VideoPlayer extends React.Component {
       showSettings: false
     })
   }
+  setSettingValue = (property, value) => {
+    if (!isNaN(value)) {
+      this.setState((state) => ({
+        settings: {
+          ...state.settings,
+          [property]: Math.max(value, 0)
+        }
+      }))
+    }
+  }
   setSkipAmount = (value) => {
-    this.setState((state) => ({
-      settings: {
-        ...state.settings,
-        skipAmount: Math.max(value, 0)
-      }
-    }))
+    if (!isNaN(value)) {
+      this.setState((state) => ({
+        settings: {
+          ...state.settings,
+          skipAmount: Math.max(value, 0)
+        }
+      }))
+    }
   }
   onSettingsSubmit = () => {
     ipc.send('settings-receiver-web', this.state.settings);
+    this.setState({
+      showSettings: false
+    });
+    this.toggleAutoSleep();
+  }
+
+  startAutoSleep = () => {
+    const sleeperId = setInterval(() => {
+      this.player.pause()
+    }, this.state.settings.autoSleepAmount * 60 * 1000);
+    this.setState({sleeperId: sleeperId});
+  }
+
+  toggleAutoSleep = () => {
+    const autoSleepEnabled = this.state.settings.autoSleepEnable;
+    if (autoSleepEnabled) {
+      this.startAutoSleep();
+    } else {
+      const currSleeperId = this.state.sleeperId;
+      if (currSleeperId) {
+        clearInterval(currSleeperId);
+      }
+    }
   }
 
   // wrap the player in a div with a `data-vjs-player` attribute
@@ -128,13 +203,30 @@ export default class VideoPlayer extends React.Component {
                       height: 'inherit',
                   }}
               >
-                <div className='d-flex flex-row space-evenly align-center rg-10'>
+                <div className='grid-container'>
                   <div className='settings-text'>Skip Amount (in seconds)</div>
-                  <button className='square-button' onClick={() => this.setSkipAmount(this.state.settings.skipAmount + 1)}>+</button>
-                  <input type={'text'} className='input-box' value={this.state.settings.skipAmount}
-                    onChange={(value) => this.setSkipAmount(value)}
-                  />
-                  <button className='square-button' onClick={() => this.setSkipAmount(this.state.settings.skipAmount - 1)}>-</button>
+                  <div className='d-flex flex-row space-evenly align-center rg-10'>
+                    <button className='square-button' onClick={() => this.setSettingValue('skipAmount', this.state.settings.skipAmount + 1)}>+</button>
+                    <input type={'tel'} pattern="[0-9]+" className='input-box' value={this.state.settings.skipAmount}
+                      onChange={(value) => this.setSettingValue('skipAmount', this.state.settings.skipAmount + 1)}
+                    />
+                    <button className='square-button' onClick={() => this.setSettingValue('skipAmount', this.state.settings.skipAmount - 1)}>-</button>
+                  </div>
+                  <div className='settings-text'>Enable Auto Sleep</div>
+                  <input type="checkbox" onChange={() => this.setState((state) => ({
+                    settings: {
+                      ...state.settings,
+                      autoSleepEnable: !state.settings.autoSleepEnable
+                    }
+                  }))} checked={this.state.settings.autoSleepEnable}></input>
+                  <div className={'settings-text' + (!this.state.settings.autoSleepEnable ? ' disabled' : '')}>Auto Sleep Amount (in minutes)</div>
+                  <div className={'d-flex flex-row space-evenly align-center' + (!this.state.settings.autoSleepEnable ? ' disabled' : '')}>
+                    <button className='square-button' onClick={() => this.setSettingValue('autoSleepAmount', this.state.settings.autoSleepAmount + 1)}>+</button>
+                    <input type={'tel'} pattern="[0-9]+" className='input-box' value={this.state.settings.autoSleepAmount}
+                      onChange={(value) => this.setSettingValue('autoSleepAmount', this.state.settings.autoSleepAmount + 1)}
+                    />
+                    <button className='square-button' onClick={() => this.setSettingValue('autoSleepAmount', this.state.settings.autoSleepAmount - 1)}>-</button>
+                  </div>
                 </div>
               </div>
           </CustomModal.Body>

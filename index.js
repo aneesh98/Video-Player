@@ -14,14 +14,14 @@ const BrowserWindow = electron.BrowserWindow;
 
 const path = require('path');
 const url = require('url');
-const mode = 'PROD';
+const mode = 'DEV';
 const childProcess = require('child_process');
 const { ipcRenderer } = require('electron');
 const { settings } = require('cluster');
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
 let mainWindow;
-
+let shortcutsWindow;
 const createLink = (source) => {
     const dest = './public/'+source.split('/').at(-1)
     childProcess.spawn('ln', [
@@ -33,9 +33,10 @@ const createLink = (source) => {
 
 const getSettings = () => {
     const settingsObject = storage.getSync('settings');
-    const settingsList = ['skipAmount'];
+    const settingsList = ['skipAmount', 'autoSleepAmount'];
     const defaults = {
-        skipAmount: 10
+        skipAmount: 10,
+        autoSleepAmount: 30
     }
     settingsList.forEach(item => {if(!settingsObject.hasOwnProperty(item)) { settingsObject[item] = defaults[item]}});
 
@@ -62,6 +63,7 @@ let template = [{
     submenu: [
         {
             label: 'Open File',
+            accelerator: 'Ctrl+O',
             click: (menuItem) => {
             if(os.platform() === 'linux' || os.platform() === 'win32'){
                 dialog.showOpenDialog({
@@ -109,8 +111,15 @@ let template = [{
         },
         {
             label: 'Settings',
+            accelerator: 'Ctrl+Shift+S',
             click: (menuItem) => {
                 mainWindow.webContents.send('settings-toggle', {})
+            }
+        },
+        {
+            label: 'View Shortcuts',
+            click: () => {
+                openShortcutsWindow();
             }
         }
     ]
@@ -137,7 +146,11 @@ function createWindow() {
     // and load the index.html of the app.
     // mainWindow.loadURL('http://localhost:3000');
     // mainWindow.loadURL('http://localhost:3000').then(() => mainWindow.webContents.send('settings-receiver', getSettings()))
-    mainWindow.loadFile('./build/index.html').then(() => mainWindow.webContents.send('settings-receiver', getSettings()))
+    if (mode === 'DEV') {
+        mainWindow.loadURL('http://localhost:3000').then(() => mainWindow.webContents.send('settings-receiver', getSettings()))
+    }
+    else
+        mainWindow.loadFile('./build/index.html').then(() => mainWindow.webContents.send('settings-receiver', getSettings()))
     // Open the DevTools.
     // mainWindow.webContents.openDevTools();
 
@@ -150,6 +163,14 @@ function createWindow() {
     })
 }
 
+function openShortcutsWindow() {
+    shortcutsWindow = new BrowserWindow({ width: 400, height: 400});
+    shortcutsWindow.loadFile('./additional-webpages/settings.html');
+    shortcutsWindow.setMenu(null)
+    shortcutsWindow.on('close', function() {
+        shortcutsWindow = null
+    })
+}
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.

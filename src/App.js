@@ -53,7 +53,7 @@ class App extends Component {
       'errorDisplay',
       'textTrackSettings',
       'resizeManager'],
-      // settingsObj: this.state.settings
+      settingsObj: this.state.settings
     }
     return (
       <div className="App">

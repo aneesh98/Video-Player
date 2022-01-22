@@ -153,7 +153,7 @@
 }
 
 .input-box {
-  width: 20px;
+  width: 30px;
   height: 18px;
 
   border: none;
@@ -163,8 +163,20 @@
 }
 
 .settings-text {
-  margin: 2px 25px;
+  margin: 2px 10px 2px 2px;
   font-size: small;
+  text-align: start;
+}
+
+.grid-container {
+  display: grid;
+  grid-template-columns: 80% 40px;
+}
+
+.disabled {
+  cursor: none;
+  opacity: 20%;
+  pointer-events: none;
 }
 
 .submit-button {

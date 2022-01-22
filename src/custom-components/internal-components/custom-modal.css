@@ -3,7 +3,7 @@
   border-style: solid;
   border-width: thin;
   width: 20em;
-  height: 10em;
+  height: max-content;
   /* min-width: 150px; */
   min-height: 100px;
   /* border-color: brown; */
@@ -37,7 +37,7 @@
 
 .vertical-flex-container {
   justify-content: space-between;
-  height: inherit;
+  height: fit-content;
 }
 
 .m-10 {

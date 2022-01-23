@@ -5,7 +5,7 @@ import CustomModal from './internal-components/modal';
 import VideoSkip from './videojs-components/video-skip';
 
 const ipc = window.require('electron').ipcRenderer;
-
+const path = window.require('path');
 export default class VideoPlayer extends React.Component {
   constructor(props) {
     super(props);
@@ -26,7 +26,8 @@ export default class VideoPlayer extends React.Component {
       'F': () => this.skip('forward'),
       'B': () => this.skip('backward'),
       'P': () => this.togglePlay(),
-      'K': () => this.enterFullScreen()
+      'K': () => this.enterFullScreen(),
+      ' ': () => this.togglePlay()
     };
     window.addEventListener('keyup', (e) => {
       Object.entries(shortcutList).forEach((shortcut) => {
@@ -47,7 +48,6 @@ export default class VideoPlayer extends React.Component {
     const SkipCompForward = new VideoSkip(this.player, {
       icon: 'forward'
     });
-    this.enterFullScreen();
     const SkipCompBackward = new VideoSkip(this.player, {
       icon: 'backward'
     });
@@ -93,13 +93,16 @@ export default class VideoPlayer extends React.Component {
     if(prevProps.settingsObj !== this.props.settingsObj) {
       this.setState({
         settings: this.props.settingsObj
+      }, () => {
+        if (this.props.settingsObj.autoSleepEnable) {
+          this.startAutoSleep();
+        }
       })    
-      if (this.props.settingsObj.autoSleepEnable) {
-        this.startAutoSleep();
-      }
+      
     }
     if(prevState.subtitlesPath !== this.state.subtitlesPath) {
-      this.player.addRemoteTextTrack({src: this.state.subtitlesPath});
+      this.player.addRemoteTextTrack({src: this.state.subtitlesPath,
+      label: path.basename(this.state.subtitlesPath)});
       // this.player.textTracks().tracks_.cues_[0].endTime = 50
       setTimeout(() => {
         // this.player.textTracks().tracks_[0].cues_[0].endTime = 50;
@@ -169,7 +172,10 @@ export default class VideoPlayer extends React.Component {
 
   startAutoSleep = () => {
     const sleeperId = setInterval(() => {
-      this.player.pause()
+      this.player.pause();
+      this.setState({
+        playing: false
+      })
     }, this.state.settings.autoSleepAmount * 60 * 1000);
     this.setState({sleeperId: sleeperId});
   }

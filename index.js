@@ -14,7 +14,7 @@ const BrowserWindow = electron.BrowserWindow;
 
 const path = require('path');
 const url = require('url');
-const mode = 'DEV';
+const mode = 'PROD';
 const childProcess = require('child_process');
 const { ipcRenderer } = require('electron');
 const { settings } = require('cluster');
@@ -41,6 +41,11 @@ const getSettings = () => {
     settingsList.forEach(item => {if(!settingsObject.hasOwnProperty(item)) { settingsObject[item] = defaults[item]}});
 
     return settingsObject;
+}
+
+let fileSource = '';
+if(process.argv.length > 1) {
+    fileSource = process.argv[1];
 }
 
 const convertSrt2Vtt = (source) => {
@@ -150,10 +155,15 @@ function createWindow() {
         mainWindow.loadURL('http://localhost:3000').then(() => mainWindow.webContents.send('settings-receiver', getSettings()))
     }
     else
-        mainWindow.loadFile('./build/index.html').then(() => mainWindow.webContents.send('settings-receiver', getSettings()))
+        mainWindow.loadFile('./build/index.html').then(() => {
+                mainWindow.webContents.send('settings-receiver', getSettings())
+                if (fileSource !== '') {
+                    mainWindow.webContents.send('selected-file', fileSource)
+                }
+            }
+        )
     // Open the DevTools.
     // mainWindow.webContents.openDevTools();
-
     // Emitted when the window is closed.
     mainWindow.on('closed', function () {
         // Dereference the window object, usually you would store windows

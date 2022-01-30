@@ -14,7 +14,7 @@ const BrowserWindow = electron.BrowserWindow;
 
 const path = require('path');
 const url = require('url');
-const mode = 'PROD';
+const mode = 'DEV';
 const childProcess = require('child_process');
 const { ipcRenderer } = require('electron');
 const { settings } = require('cluster');

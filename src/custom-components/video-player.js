@@ -3,6 +3,7 @@ import videojs from 'video.js'
 import 'video.js/dist/video-js.css'
 import CustomModal from './internal-components/modal';
 import VideoSkip from './videojs-components/video-skip';
+import SubtitlesMenu from './internal-components/subtitles-menu';
 
 const ipc = window.require('electron').ipcRenderer;
 const path = window.require('path');
@@ -17,8 +18,9 @@ export default class VideoPlayer extends React.Component {
       settings: {
         skipAmount: 8,
         autoSleepEnable: false,
-        autoSleepAmount: 30
-      }
+        autoSleepAmount: 30,
+      },
+      showSubtitleSettings: false,
     }
   }
   registerShortcuts = () => {
@@ -42,7 +44,8 @@ export default class VideoPlayer extends React.Component {
   }
   componentDidMount() {
     // instantiate Video.js
-    this.player = videojs(this.videoNode, this.props, function onPlayerReady() {
+    let props = {...this.props};
+    this.player = videojs(this.videoNode, props, function onPlayerReady() {
       })
     const VideoSkip = videojs.getComponent('VideoSkip');
     const SkipCompForward = new VideoSkip(this.player, {
@@ -54,6 +57,10 @@ export default class VideoPlayer extends React.Component {
     SkipCompForward.on('click', () => this.skip('forward'));
     SkipCompBackward.on('click', () => this.skip('backward'));
     this.registerShortcuts();
+    const el = document.getElementsByClassName('vjs-text-track-display')[0];
+    setTimeout(() => console.log(el.children), 2000);
+    // el.firstElementChild.id = 'subtitle-container';
+    // this.observeTextTrackChanges();
     this.player.controlBar.addChild(SkipCompForward);
     this.player.controlBar.addChild(SkipCompBackward);
     ipc.on('subtitle-listener', this.setSubtitles)
@@ -64,6 +71,19 @@ export default class VideoPlayer extends React.Component {
       showSettings: !state.showSettings
     }));
   }
+  showSubtitlesMenu = (event) => {
+    event.preventDefault();
+    event.stopPropagation()
+    console.log('Event Trigerred');
+    this.setState({
+      showSubtitleSettings: true
+    }, ()=> {
+      const menu = document.querySelector('.ctxmenu');
+      menu.style.top = event.y + 'px';
+      menu.style.left = event.x + 'px';
+    })
+    
+  } 
   setSubtitles = (e, path) => {
     this.setState({
       subtitlesPath: path
@@ -71,6 +91,18 @@ export default class VideoPlayer extends React.Component {
   }
   skip = (type) => {
     this.player.currentTime(this.player.currentTime() + (type === 'forward' ? 1 : -1) * this.state.settings.skipAmount );
+  }
+  observeTextTrackChanges = () => {
+    let elem = document.getElementById('subtitle-container');
+    console.log(elem);
+    let changeFn = function() {
+      console.log(arguments);
+    };
+    const mutOb = new MutationObserver(changeFn);
+    mutOb.observe(elem, { 
+      childList: true,
+      attributeFilter: []
+    });
   }
   componentDidUpdate(prevProps, prevState) {
     if(prevProps.sources !== this.props.sources) {
@@ -101,8 +133,17 @@ export default class VideoPlayer extends React.Component {
       
     }
     if(prevState.subtitlesPath !== this.state.subtitlesPath) {
-      this.player.addRemoteTextTrack({src: this.state.subtitlesPath,
+      this.trackElem = this.player.addRemoteTextTrack({src: this.state.subtitlesPath,
       label: path.basename(this.state.subtitlesPath)});
+      console.log(this.player.textTracks());
+      this.player.on('texttrackchange',  () => {
+        let activeCues = this.player.textTracks().tracks_[0].activeCues_;
+        activeCues.forEach((elem) => {
+          elem.displayState.style.pointerEvents = "auto";
+          elem.displayState.style.pointer = "text"
+          elem.displayState.addEventListener('contextmenu', (e) => this.showSubtitlesMenu(e));
+        })
+      })
       // this.player.textTracks().tracks_.cues_[0].endTime = 50
       setTimeout(() => {
         // this.player.textTracks().tracks_[0].cues_[0].endTime = 50;
@@ -191,7 +232,10 @@ export default class VideoPlayer extends React.Component {
       }
     }
   }
-
+  showMeaning = (text) => {
+    const ud = window.require('urban-dictionary');
+    ud.define(text, (error, results) => {console.log(results)})
+  }
   // wrap the player in a div with a `data-vjs-player` attribute
   // so videojs won't create additional wrapper in the DOM
   // see https://github.com/videojs/video.js/pull/3856
@@ -240,6 +284,15 @@ export default class VideoPlayer extends React.Component {
             <button className='submit-button' onClick={this.onSettingsSubmit}>SUBMIT</button>
           </CustomModal.Footer>
         </CustomModal>
+        {this.state.showSubtitleSettings && <SubtitlesMenu 
+          menuItems={[
+            {
+              label: 'Get Meaning',
+              onClick: () => this.showMeaning(window.getSelection().toString()),
+            }
+          ]}
+          onClickOutside={() => { console.log('Outside Click Triggered'); this.setState({showSubtitleSettings: false}) }}
+        />}
         <div style={{
           height: "100vh",
           width: "100%",

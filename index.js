@@ -49,10 +49,11 @@ if(process.argv.length > 1) {
 }
 
 const convertSrt2Vtt = (source) => {
+    let pathSep = (os.platform() === 'linux') ? '/' : '\\';
     let data = fs.readFileSync(source);
-    let fileName = source.split('/').at(-1);
+    let fileName = source.split(pathSep).at(-1);
     let resultFileName = fileName.split('.').slice(0, -1).join('.') + '.vtt'
-    let dest = source.split('/').slice(0, -1).join('/') + '/' + resultFileName;
+    let dest = source.split(pathSep).slice(0, -1).join(pathSep) + pathSep + resultFileName;
     srt2vtt(data, function (err, data) {
         if (err) throw new Error(err);
         fs.writeFileSync(dest, data)

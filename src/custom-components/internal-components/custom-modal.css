@@ -83,3 +83,40 @@
   padding: 10px;
   color: white;
 }
+
+/* MENU */
+.ctxmenu {
+  display: block;
+  position: absolute;
+  z-index: 99999;
+  background-color: white;
+}
+
+.ctxmenu.show {
+  display: block;
+}
+
+.ctxmenu .list {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.ctxmenu .listitem {
+  position: relative;
+  display: block;
+  border: 1px solid rgba(0, 0, 0, 0.125);
+  padding: 0.75rem 1.25rem;
+  font-size: small;
+  cursor: pointer;
+}
+
+.ctxmenu .listitem:hover {
+  background-color: rgba(233, 233, 233, 0.5);
+}
+
+.box {
+  height: 300px;
+}

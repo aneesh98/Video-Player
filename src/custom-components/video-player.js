@@ -4,16 +4,38 @@ import 'video.js/dist/video-js.css'
 import CustomModal from './internal-components/modal';
 import VideoSkip from './videojs-components/video-skip';
 import SubtitlesMenu from './internal-components/subtitles-menu';
+import '@fortawesome/fontawesome-free/css/all.css';
+import DisplayMeaning from './internal-components/display-meaning';
 
 const ipc = window.require('electron').ipcRenderer;
 const path = window.require('path');
+const PlayButton = (props) => {
+  return <div style={{
+    width: "100%",
+    display: "flex",
+    flexDirection: "row",
+    alignItems: "center",
+    gap:"5px"
+  }} onClick={() => props.onClick(props.startPoint)}>
+    <i className='fas fa-sm fa-play'></i>
+    <div>{props.text}</div>
+  </div>
+}
 export default class VideoPlayer extends React.Component {
   constructor(props) {
     super(props);
+    this.cueReferences = [];
     this.state = {
       subtitlesPath: '',
       showSettings: false,
       playing: false,
+      selectedText: '',
+      modalOpts: {
+        show: false,
+        type: 'Settings',
+        style: {}
+      },
+      subtitleCount: 0,
       sleeperId: null,
       settings: {
         skipAmount: 8,
@@ -58,7 +80,7 @@ export default class VideoPlayer extends React.Component {
     SkipCompBackward.on('click', () => this.skip('backward'));
     this.registerShortcuts();
     const el = document.getElementsByClassName('vjs-text-track-display')[0];
-    setTimeout(() => console.log(el.children), 2000);
+    // setTimeout(() => console.log(el.children), 2000);
     // el.firstElementChild.id = 'subtitle-container';
     // this.observeTextTrackChanges();
     this.player.controlBar.addChild(SkipCompForward);
@@ -68,18 +90,30 @@ export default class VideoPlayer extends React.Component {
   }
   toggleSettings = (e, obj) => {
     this.setState((state) => ({
-      showSettings: !state.showSettings
+      modalOpts: {
+        ...state.modalOpts,
+        show: !state.modalOpts.show,
+        type: 'Settings'
+      }
     }));
   }
+  seekPlayer = (timePoint) => {
+    this.player.currentTime(timePoint)
+    this.player.play();
+  }
+
+
   showSubtitlesMenu = (event) => {
+
     event.preventDefault();
     event.stopPropagation()
-    console.log('Event Trigerred');
     this.setState({
       showSubtitleSettings: true
     }, ()=> {
+      const electron = window.require('electron');
       const menu = document.querySelector('.ctxmenu');
-      menu.style.top = event.y + 'px';
+      const yCoord = (event.y + menu.offsetHeight > window.innerHeight) ? (window.innerHeight - menu.offsetHeight - 1) : event.y;
+      menu.style.top = yCoord + 'px';
       menu.style.left = event.x + 'px';
     })
     
@@ -94,9 +128,7 @@ export default class VideoPlayer extends React.Component {
   }
   observeTextTrackChanges = () => {
     let elem = document.getElementById('subtitle-container');
-    console.log(elem);
     let changeFn = function() {
-      console.log(arguments);
     };
     const mutOb = new MutationObserver(changeFn);
     mutOb.observe(elem, { 
@@ -133,11 +165,18 @@ export default class VideoPlayer extends React.Component {
       
     }
     if(prevState.subtitlesPath !== this.state.subtitlesPath) {
+      let subtitleCount = this.state.subtitleCount;
+      subtitleCount += 1;
       this.trackElem = this.player.addRemoteTextTrack({src: this.state.subtitlesPath,
-      label: path.basename(this.state.subtitlesPath)});
-      console.log(this.player.textTracks());
+      label: 'Subtitles#' + subtitleCount});
+      this.setState({
+        subtitleCount: subtitleCount
+      })
       this.player.on('texttrackchange',  () => {
         let activeCues = this.player.textTracks().tracks_[0].activeCues_;
+        if (!this.cueList) {
+          this.cueList = this.player.textTracks().tracks_[0].cues_;
+        }
         activeCues.forEach((elem) => {
           elem.displayState.style.pointerEvents = "auto";
           elem.displayState.style.pointer = "text"
@@ -179,9 +218,13 @@ export default class VideoPlayer extends React.Component {
   }
   
   onSettingsClose = () => {
-    this.setState({
-      showSettings: false
-    })
+    this.setState((state) => ({
+      modalOpts: {
+        ...state.modalOpts,
+        show: false,
+        style: {}
+      }
+    }))
   }
   setSettingValue = (property, value) => {
     if (!isNaN(value)) {
@@ -233,17 +276,46 @@ export default class VideoPlayer extends React.Component {
     }
   }
   showMeaning = (text) => {
-    const ud = window.require('urban-dictionary');
-    ud.define(text, (error, results) => {console.log(results)})
+    this.setState((state) => ({
+      selectedText: text,
+      modalOpts: {
+        ...state.modalOpts,
+        show: true,
+        type: 'Meaning',
+        style: {
+          left: "20%",
+          top: "20%",
+          width: "50em",
+
+        }
+      }
+    }));
   }
-  // wrap the player in a div with a `data-vjs-player` attribute
-  // so videojs won't create additional wrapper in the DOM
-  // see https://github.com/videojs/video.js/pull/3856
-  render() {
-    return (
-      <>
-        <CustomModal display={this.state.showSettings} title="Settings" closable onClose={() => this.onSettingsClose()}>
-          <CustomModal.Body>
+  showReferences = (text) => {
+  
+    let wordReferences = [];
+    if (this.cueList) {
+      this.cueList.forEach((cue) => {
+        if(cue.text.includes(text)) {
+          wordReferences.push({
+            caption: cue.text,
+            startPoint: cue.startTime
+          });
+        }
+      })
+    }
+    this.cueReferences = wordReferences;
+    this.setState((state) => ({
+      modalOpts: {
+        ...state.modalOpts,
+        show: true,
+        type: 'References'
+      }
+    }))
+  }
+  ModalContent = (props) => {
+    if (props.type === 'Settings') {
+      return (
               <div
                   style={{
                       display: 'flex',
@@ -279,9 +351,95 @@ export default class VideoPlayer extends React.Component {
                   </div>
                 </div>
               </div>
+      )
+    }
+    else if (props.type === 'References') {
+      return (
+        <div style={{
+          height: "10em",
+          width: "100%",
+          overflowY: "auto"
+        }}>
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'space-evenly',
+          }}>
+            {this.cueReferences.map((cueItem, index) => (
+              <PlayButton startPoint={cueItem.startPoint} text={"Play Reference #" + (index + 1)} 
+                onClick={this.seekPlayer}
+              />
+            ))}
+          </div>
+        </div>
+      );
+    } else if (props.type === 'Meaning') {
+      return <div style={{
+        height: "20em",
+        width: "100%",
+        overflowY: "auto"
+      }}><DisplayMeaning text={this.state.selectedText} /> </div>
+    }
+    
+  }
+  ModalFooter = (props) => {
+    if (props.type === 'Settings') {
+      return (<button className='submit-button' onClick={this.onSettingsSubmit}>SUBMIT</button>)
+    } else {
+      return null;
+    }
+  }
+
+
+  // wrap the player in a div with a `data-vjs-player` attribute
+  // so videojs won't create additional wrapper in the DOM
+  // see https://github.com/videojs/video.js/pull/3856
+  render() {
+    return (
+      <>
+        <CustomModal display={this.state.modalOpts.show} title={this.state.modalOpts.type} closable onClose={() => this.onSettingsClose()}
+        style={this.state.modalOpts.style}>
+          <CustomModal.Body>
+              {/* <div
+                  style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'space-evenly',
+                      height: 'inherit',
+                  }}
+              >
+                <div className='grid-container'>
+                  <div className='settings-text'>Skip Amount (in seconds)</div>
+                  <div className='d-flex flex-row space-evenly align-center rg-10'>
+                    <button className='square-button' onClick={() => this.setSettingValue('skipAmount', this.state.settings.skipAmount + 1)}>+</button>
+                    <input type={'tel'} pattern="[0-9]+" className='input-box' value={this.state.settings.skipAmount}
+                      onChange={(value) => this.setSettingValue('skipAmount', this.state.settings.skipAmount + 1)}
+                    />
+                    <button className='square-button' onClick={() => this.setSettingValue('skipAmount', this.state.settings.skipAmount - 1)}>-</button>
+                  </div>
+                  <div className='settings-text'>Enable Auto Sleep</div>
+                  <input type="checkbox" onChange={() => this.setState((state) => ({
+                    settings: {
+                      ...state.settings,
+                      autoSleepEnable: !state.settings.autoSleepEnable
+                    }
+                  }))} checked={this.state.settings.autoSleepEnable}></input>
+                  <div className={'settings-text' + (!this.state.settings.autoSleepEnable ? ' disabled' : '')}>Auto Sleep Amount (in minutes)</div>
+                  <div className={'d-flex flex-row space-evenly align-center' + (!this.state.settings.autoSleepEnable ? ' disabled' : '')}>
+                    <button className='square-button' onClick={() => this.setSettingValue('autoSleepAmount', this.state.settings.autoSleepAmount + 1)}>+</button>
+                    <input type={'tel'} pattern="[0-9]+" className='input-box' value={this.state.settings.autoSleepAmount}
+                      onChange={(value) => this.setSettingValue('autoSleepAmount', this.state.settings.autoSleepAmount + 1)}
+                    />
+                    <button className='square-button' onClick={() => this.setSettingValue('autoSleepAmount', this.state.settings.autoSleepAmount - 1)}>-</button>
+                  </div>
+                </div>
+              </div> */}
+              <this.ModalContent type={this.state.modalOpts.type}/>
           </CustomModal.Body>
           <CustomModal.Footer>
-            <button className='submit-button' onClick={this.onSettingsSubmit}>SUBMIT</button>
+            <this.ModalFooter type={this.state.modalOpts.type} />
           </CustomModal.Footer>
         </CustomModal>
         {this.state.showSubtitleSettings && <SubtitlesMenu 
@@ -289,9 +447,14 @@ export default class VideoPlayer extends React.Component {
             {
               label: 'Get Meaning',
               onClick: () => this.showMeaning(window.getSelection().toString()),
+            },
+            {
+              label: 'Get References',
+              onClick: () => this.showReferences(window.getSelection().toString())
             }
-          ]}
-          onClickOutside={() => { console.log('Outside Click Triggered'); this.setState({showSubtitleSettings: false}) }}
+          ]}          
+          onClickOutside={() => {this.setState({showSubtitleSettings: false}) }}
+
         />}
         <div style={{
           height: "100vh",

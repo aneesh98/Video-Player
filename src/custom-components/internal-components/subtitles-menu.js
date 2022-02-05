@@ -9,10 +9,8 @@ class SubtitlesMenu extends React.Component {
         }
     }
     componentDidMount() {
-        console.log('Subtitles Menu CDM called', this.props);
         document.addEventListener('mousedown', (event) => {
             if(this.myRef.current && !this.myRef.current.contains(event.target)) {
-                console.log('Encountered Outside Click');
                 if (this.props.onClickOutside) {
                     this.props.onClickOutside();
                 }
@@ -32,7 +30,9 @@ class SubtitlesMenu extends React.Component {
                 <ul className='list'>
                     {this.props.menuItems.map((item) => 
                     <li className='listitem' onMouseDown={(e) => {
+                        e = e || window.event;
                         e.preventDefault(); 
+                        e.stopPropagation();
                         item.onClick()
                     }}>{item.label}</li>)
                     

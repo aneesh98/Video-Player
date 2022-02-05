@@ -88,6 +88,7 @@ class CustomModal extends React.Component {
         }
     }
     render() {
+        const style = this.props.style;
         // this.el.classList += ' overlay';
         return ReactDOM.createPortal(
             <CSSTransition
@@ -101,6 +102,7 @@ class CustomModal extends React.Component {
                             className={`loading-screen-container ${
                                 this.state.display ? 'modal-show' : ''
                             }`}
+                            style={style}
                         >
                             <div className="d-flex-vertical vertical-flex-container m-10">
                                 {this.renderHeader()}

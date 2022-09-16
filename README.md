@@ -16,7 +16,8 @@ Note: Currently only Windows installer is available.
 Go to the [latest release](https://github.com/aneesh98/Video-Player/releases/latest) and follow setup instructions.
 
 ## Development
-1. Clone the repository from the [repo link](https://github.com/aneesh98/Video-Player.git) and checkout to master.
-2. Run `npm install` to install all node dependencies.
-3. Run `npm start` in one terminal session. (Note this will spin up a react development server at port 3000, and open http://localhost:3000 in your browser, however the browser version is not needed, and can be closed)
-4. Run `npm run electron` in another terminal to open electron app.
+1. Install node, npm and git on your respective platform. 
+2. Clone the repository from the [repo link](https://github.com/aneesh98/Video-Player.git) and checkout to master.
+3. Run `npm install` to install all node dependencies.
+4. Run `npm start` in one terminal session. (Note this will spin up a react development server at port 3000, and open http://localhost:3000 in your browser, however the browser version is not needed, and can be closed)
+5. Run `npm run electron` in another terminal to open electron app.
